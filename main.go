@@ -9,7 +9,6 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/text"
 	"golang.org/x/image/font"
 	"golang.org/x/image/font/opentype"
-	"image"
 	"image/color"
 	_ "image/png"
 	"log"
@@ -31,31 +30,32 @@ var (
 )
 
 type Game struct {
-	playing string
-	state int
+	playing   string
+	state     int
 	gameBoard [3][3]int
-	round int
+	round     int
 }
 
 func (g *Game) Update() error {
 	switch g.state {
-		case 0:
-			g.Load()
-			break
-		case 1:
+	case 0:
+		g.Load()
+		break
+	case 1:
+		if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
 			mx, my := ebiten.CursorPosition()
-			if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
-				if mx/160 < 3 && mx >= 0 && my/160 < 3 && my >= 0 {
-					g.round++
-					if g.round%2 == 0 {
-						g.playing = "O"
-					} else {
-						g.playing = "X"
-					}
+			if mx/160 < 3 && mx >= 0 && my/160 < 3 && my >= 0 && g.gameBoard[mx/160][my/160] == 0 {
+				g.round++
+				if g.round%2 == 0 {
+					g.gameBoard[mx/160][my/160] = 1
+					g.playing = "X"
+				} else {
+					g.gameBoard[mx/160][my/160] = 2
+					g.playing = "O"
 				}
 			}
-			fmt.Printf("X: %v, Y: %v \n", mx/160, my/160)
-			break
+		}
+		break
 	}
 	if inpututil.KeyPressDuration(ebiten.KeyEscape) == 60 {
 		os.Exit(0)
@@ -72,32 +72,36 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	text.Draw(screen, msgTFPS, mplusNormalFont, 0, sHeight-30, color.White)
 	if inpututil.KeyPressDuration(ebiten.KeyEscape) > 1 {
 		msgClosing := fmt.Sprintf("CLOSING...")
-		colorChangeToExit := 255-(255/60*uint8(inpututil.KeyPressDuration(ebiten.KeyEscape)))
+		colorChangeToExit := 255 - (255 / 60 * uint8(inpututil.KeyPressDuration(ebiten.KeyEscape)))
 		text.Draw(screen, msgClosing, mplusNormalFont, sWidth/2, sHeight-30, color.RGBA{R: 255, G: colorChangeToExit, B: colorChangeToExit, A: 255})
 	}
 	msgXY := fmt.Sprintf("(%v, %v)", mx, my)
 	text.Draw(screen, msgXY, mplusNormalFont, sWidth/2, sHeight-5, color.White)
 	msg := fmt.Sprintf("%v", g.playing)
 	text.Draw(screen, msg, mplusNormalFont, mx, my, color.RGBA{G: 255, A: 255})
+	for i, _ := range g.gameBoard {
+		for j, board2 := range g.gameBoard[i] {
+			msga := fmt.Sprintf("%v", board2)
+			text.Draw(screen, msga, mplusNormalFont, (160*(i+1)-160)+80, (160*(j+1)-160)+80, color.RGBA{G: 255, A: 255})
+		}
+	}
 }
 
 func (g *Game) DrawBoard() {
-	picFile, _ := ebitenutil.OpenFile("images/board.png")
-	img, _, err := image.Decode(picFile)
+	var err error
+	canvasImage, _, err = ebitenutil.NewImageFromFile("images/board.png")
 	if err != nil {
 		log.Fatal(err)
 	}
-	canvasImage = ebiten.NewImageFromImage(img)
 }
 
-func (g *Game) DrawSymbol(symbol string) {
-	fil := fmt.Sprintf("images/%v.png", symbol)
-	picFile, _ := ebitenutil.OpenFile(fil)
-	img, _, err := image.Decode(picFile)
+func (g *Game) DrawSymbol(symbol string, x, y int) {
+	fileName := fmt.Sprintf("images/%v.png", symbol)
+	var err error
+	canvasImage, _, err = ebitenutil.NewImageFromFile(fileName)
 	if err != nil {
 		log.Fatal(err)
 	}
-	canvasImage = ebiten.NewImageFromImage(img)
 }
 
 func (g *Game) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {
@@ -107,11 +111,11 @@ func (g *Game) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeigh
 func (g *Game) Load() {
 	g.DrawBoard()
 	g.state = 1
-	g.gameBoard[0][0], g.gameBoard[0][1], g.gameBoard[0][2] = 0,0,0
-	g.gameBoard[1][0], g.gameBoard[1][1], g.gameBoard[1][2] = 0,0,0
-	g.gameBoard[2][0], g.gameBoard[2][1], g.gameBoard[2][2] = 0,0,0
+	g.gameBoard[0][0], g.gameBoard[0][1], g.gameBoard[0][2] = 0, 0, 0
+	g.gameBoard[1][0], g.gameBoard[1][1], g.gameBoard[1][2] = 0, 0, 0
+	g.gameBoard[2][0], g.gameBoard[2][1], g.gameBoard[2][2] = 0, 0, 0
 	g.playing = "O"
-	g.round = 0
+	g.round = 1
 
 }
 
