@@ -24,9 +24,9 @@ const (
 
 var (
 	mplusNormalFont font.Face
-	round           int
-	reset           int
-	canvasImage     = ebiten.NewImage(sWidth, sHeight)
+	boardImage      = ebiten.NewImage(sWidth, sHeight)
+	symbolImage     *ebiten.Image
+	gameImage       = ebiten.NewImage(sWidth, sWidth)
 )
 
 type Game struct {
@@ -47,9 +47,11 @@ func (g *Game) Update() error {
 			if mx/160 < 3 && mx >= 0 && my/160 < 3 && my >= 0 && g.gameBoard[mx/160][my/160] == 0 {
 				g.round++
 				if g.round%2 == 0 {
+					g.DrawSymbol(mx/160, my/160, "O")
 					g.gameBoard[mx/160][my/160] = 1
 					g.playing = "X"
 				} else {
+					g.DrawSymbol(mx/160, my/160, "X")
 					g.gameBoard[mx/160][my/160] = 2
 					g.playing = "O"
 				}
@@ -65,7 +67,8 @@ func (g *Game) Update() error {
 
 func (g *Game) Draw(screen *ebiten.Image) {
 
-	screen.DrawImage(canvasImage, nil)
+	screen.DrawImage(boardImage, nil)
+	screen.DrawImage(gameImage, nil)
 	mx, my := ebiten.CursorPosition()
 
 	msgTFPS := fmt.Sprintf("TPS: %0.2f\nFPS: %0.2f", ebiten.CurrentTPS(), ebiten.CurrentFPS())
@@ -79,37 +82,32 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	text.Draw(screen, msgXY, mplusNormalFont, sWidth/2, sHeight-5, color.White)
 	msg := fmt.Sprintf("%v", g.playing)
 	text.Draw(screen, msg, mplusNormalFont, mx, my, color.RGBA{G: 255, A: 255})
-	for i, _ := range g.gameBoard {
-		for j, board2 := range g.gameBoard[i] {
-			msga := fmt.Sprintf("%v", board2)
-			text.Draw(screen, msga, mplusNormalFont, (160*(i+1)-160)+80, (160*(j+1)-160)+80, color.RGBA{G: 255, A: 255})
-		}
-	}
-}
-
-func (g *Game) DrawBoard() {
-	var err error
-	canvasImage, _, err = ebitenutil.NewImageFromFile("images/board.png")
-	if err != nil {
-		log.Fatal(err)
-	}
-}
-
-func (g *Game) DrawSymbol(symbol string, x, y int) {
-	fileName := fmt.Sprintf("images/%v.png", symbol)
-	var err error
-	canvasImage, _, err = ebitenutil.NewImageFromFile(fileName)
-	if err != nil {
-		log.Fatal(err)
-	}
 }
 
 func (g *Game) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {
 	return sWidth, sHeight
 }
 
+func (g *Game) DrawSymbol(x, y int, sym string) {
+	fileName := fmt.Sprintf("images/%v.png", sym)
+	var err error
+	symbolImage, _, err = ebitenutil.NewImageFromFile(fileName)
+	if err != nil {
+		log.Fatal(err)
+	}
+	opSymbol := &ebiten.DrawImageOptions{}
+	opSymbol.GeoM.Translate(float64((160*(x+1)-160)+7), float64((160*(y+1)-160)+7))
+
+	gameImage.DrawImage(symbolImage, opSymbol)
+}
+
 func (g *Game) Load() {
-	g.DrawBoard()
+
+	var err error
+	boardImage, _, err = ebitenutil.NewImageFromFile("images/board.png")
+	if err != nil {
+		log.Fatal(err)
+	}
 	g.state = 1
 	g.gameBoard[0][0], g.gameBoard[0][1], g.gameBoard[0][2] = 0, 0, 0
 	g.gameBoard[1][0], g.gameBoard[1][1], g.gameBoard[1][2] = 0, 0, 0
