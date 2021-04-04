@@ -63,7 +63,6 @@ func (g *Game) Update() error {
 					g.gameBoard[mx/160][my/160] = "X"
 					g.playing = "O"
 				}
-				fmt.Println(g.round)
 				g.CheckWin()
 				g.round++
 			}
@@ -91,8 +90,8 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	screen.DrawImage(gameImage, nil)
 	mx, my := ebiten.CursorPosition()
 
-	msgTFPS := fmt.Sprintf("TPS: %0.2f\nFPS: %0.2f", ebiten.CurrentTPS(), ebiten.CurrentFPS())
-	text.Draw(screen, msgTFPS, normalText, 0, sHeight-30, color.White)
+	msgFPS := fmt.Sprintf("TPS: %0.2f\nFPS: %0.2f", ebiten.CurrentTPS(), ebiten.CurrentFPS())
+	text.Draw(screen, msgFPS, normalText, 0, sHeight-30, color.White)
 	if inpututil.KeyPressDuration(ebiten.KeyEscape) > 1 {
 		msgClosing := fmt.Sprintf("CLOSING...")
 		colorChangeToExit := 255 - (255 / 60 * uint8(inpututil.KeyPressDuration(ebiten.KeyEscape)))
@@ -106,13 +105,13 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	text.Draw(screen, msgOX, normalText, sWidth/2, sHeight-5, color.White)
 	if g.win != "" {
 		msgWin := fmt.Sprintf("%v wins!", g.win)
-		text.Draw(screen, msgWin, bigText, 0, sHeight/2, color.RGBA{G: 50, B: 200, A: 255})
+		text.Draw(screen, msgWin, bigText, 70, 200, color.RGBA{G: 50, B: 200, A: 255})
 	}
 	msg := fmt.Sprintf("%v", g.playing)
 	text.Draw(screen, msg, normalText, mx, my, color.RGBA{G: 255, A: 255})
 }
 
-func (g *Game) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {
+func (g *Game) Layout(int, int) (screenWidth int, screenHeight int) {
 	return sWidth, sHeight
 }
 
@@ -175,7 +174,7 @@ func (g *Game) CheckWin() {
 		g.pointsX++
 		g.state = 2
 	} else if g.round == 8 {
-		g.win = "No one"
+		g.win = "No one\n"
 		g.state = 2
 	}
 }
