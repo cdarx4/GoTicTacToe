@@ -1,14 +1,17 @@
 package main
 
 import (
+	"bytes"
+	"embed"
+	_ "embed"
 	"fmt"
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 	"github.com/hajimehoshi/ebiten/v2/examples/resources/fonts"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"github.com/hajimehoshi/ebiten/v2/text"
 	"golang.org/x/image/font"
 	"golang.org/x/image/font/opentype"
+	"image"
 	"image/color"
 	_ "image/png"
 	"log"
@@ -24,6 +27,9 @@ const (
 	bigFontSize = 100
 	dpi         = 72
 )
+
+//go:embed images/*
+var imageFS embed.FS
 
 var (
 	normalText  font.Face
@@ -116,12 +122,15 @@ func (g *Game) Layout(int, int) (screenWidth int, screenHeight int) {
 }
 
 func (g *Game) DrawSymbol(x, y int, sym string) {
-	fileName := fmt.Sprintf("images/%v.png", sym)
-	var err error
-	symbolImage, _, err = ebitenutil.NewImageFromFile(fileName)
+	imageBytes, err := imageFS.ReadFile(fmt.Sprintf("images/%v.png", sym))
 	if err != nil {
 		log.Fatal(err)
 	}
+	decoded, _, err := image.Decode(bytes.NewReader(imageBytes))
+	if err != nil {
+		log.Fatal(err)
+	}
+	symbolImage = ebiten.NewImageFromImage(decoded)
 	opSymbol := &ebiten.DrawImageOptions{}
 	opSymbol.GeoM.Translate(float64((160*(x+1)-160)+7), float64((160*(y+1)-160)+7))
 
@@ -129,11 +138,15 @@ func (g *Game) DrawSymbol(x, y int, sym string) {
 }
 
 func (g *Game) Init() {
-	var err error
-	boardImage, _, err = ebitenutil.NewImageFromFile("images/board.png")
+	imageBytes, err := imageFS.ReadFile("images/board.png")
 	if err != nil {
 		log.Fatal(err)
 	}
+	decoded, _, err := image.Decode(bytes.NewReader(imageBytes))
+	if err != nil {
+		log.Fatal(err)
+	}
+	boardImage = ebiten.NewImageFromImage(decoded)
 	re := newRandom().Intn(2)
 	if re == 0 {
 		g.playing = "O"
