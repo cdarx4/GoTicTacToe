@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"embed"
-	_ "embed"
 	"fmt"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/examples/resources/fonts"
@@ -36,6 +35,7 @@ var (
 	bigText     font.Face
 	boardImage  *ebiten.Image
 	symbolImage *ebiten.Image
+	textImage   = ebiten.NewImage(sWidth, sWidth)
 	gameImage   = ebiten.NewImage(sWidth, sWidth)
 )
 
@@ -69,7 +69,7 @@ func (g *Game) Update() error {
 					g.gameBoard[mx/160][my/160] = "X"
 					g.playing = "O"
 				}
-				g.CheckWin()
+				g.wins(g.CheckWin())
 				g.round++
 			}
 		}
@@ -90,6 +90,22 @@ func (g *Game) Update() error {
 	return nil
 }
 
+func keyChangeColor(key ebiten.Key, screen *ebiten.Image) {
+	if inpututil.KeyPressDuration(key) > 1 {
+		var msgText string
+		var colorText color.RGBA
+		colorChange := 255 - (255 / 60 * uint8(inpututil.KeyPressDuration(key)))
+		if key == ebiten.KeyEscape {
+			msgText = fmt.Sprintf("CLOSING...")
+			colorText = color.RGBA{R: 255, G: colorChange, B: colorChange, A: 255}
+		} else if key == ebiten.KeyR {
+			msgText = fmt.Sprintf("RESETING...")
+			colorText = color.RGBA{R: colorChange, G: 255, B: 255, A: 255}
+		}
+		text.Draw(screen, msgText, normalText, sWidth/2, sHeight-30, colorText)
+	}
+}
+
 func (g *Game) Draw(screen *ebiten.Image) {
 
 	screen.DrawImage(boardImage, nil)
@@ -98,15 +114,9 @@ func (g *Game) Draw(screen *ebiten.Image) {
 
 	msgFPS := fmt.Sprintf("TPS: %0.2f\nFPS: %0.2f", ebiten.CurrentTPS(), ebiten.CurrentFPS())
 	text.Draw(screen, msgFPS, normalText, 0, sHeight-30, color.White)
-	if inpututil.KeyPressDuration(ebiten.KeyEscape) > 1 {
-		msgClosing := fmt.Sprintf("CLOSING...")
-		colorChangeToExit := 255 - (255 / 60 * uint8(inpututil.KeyPressDuration(ebiten.KeyEscape)))
-		text.Draw(screen, msgClosing, normalText, sWidth/2, sHeight-30, color.RGBA{R: 255, G: colorChangeToExit, B: colorChangeToExit, A: 255})
-	} else if inpututil.KeyPressDuration(ebiten.KeyR) > 1 {
-		msgClosing := fmt.Sprintf("RESETING...")
-		colorChangeToReset := 255 - (255 / 60 * uint8(inpututil.KeyPressDuration(ebiten.KeyR)))
-		text.Draw(screen, msgClosing, normalText, sWidth/2, sHeight-30, color.RGBA{R: colorChangeToReset, G: 255, B: 255, A: 255})
-	}
+
+	keyChangeColor(ebiten.KeyEscape, screen)
+	keyChangeColor(ebiten.KeyR, screen)
 	msgOX := fmt.Sprintf("O: %v | X: %v", g.pointsO, g.pointsX)
 	text.Draw(screen, msgOX, normalText, sWidth/2, sHeight-5, color.White)
 	if g.win != "" {
@@ -115,10 +125,6 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	}
 	msg := fmt.Sprintf("%v", g.playing)
 	text.Draw(screen, msg, normalText, mx, my, color.RGBA{G: 255, A: 255})
-}
-
-func (g *Game) Layout(int, int) (screenWidth int, screenHeight int) {
-	return sWidth, sHeight
 }
 
 func (g *Game) DrawSymbol(x, y int, sym string) {
@@ -161,9 +167,7 @@ func (g *Game) Init() {
 
 func (g *Game) Load() {
 	gameImage.Clear()
-	g.gameBoard[0][0], g.gameBoard[0][1], g.gameBoard[0][2] = "", "", ""
-	g.gameBoard[1][0], g.gameBoard[1][1], g.gameBoard[1][2] = "", "", ""
-	g.gameBoard[2][0], g.gameBoard[2][1], g.gameBoard[2][2] = "", "", ""
+	g.gameBoard = [3][3]string{{"", "", ""}, {"", "", ""}, {"", "", ""}}
 	g.round = 0
 	if g.alter == 0 {
 		g.playing = "X"
@@ -176,20 +180,39 @@ func (g *Game) Load() {
 	g.state = 1
 }
 
-// I didn't had better ideas
-func (g *Game) CheckWin() {
-	if (g.gameBoard[0][0] == "O" && g.gameBoard[0][1] == "O" && g.gameBoard[0][2] == "O") || (g.gameBoard[1][0] == "O" && g.gameBoard[1][1] == "O" && g.gameBoard[1][2] == "O") || (g.gameBoard[2][0] == "O" && g.gameBoard[2][1] == "O" && g.gameBoard[2][2] == "O") || (g.gameBoard[0][0] == "O" && g.gameBoard[1][0] == "O" && g.gameBoard[2][0] == "O") || (g.gameBoard[0][1] == "O" && g.gameBoard[1][1] == "O" && g.gameBoard[2][1] == "O") || (g.gameBoard[0][2] == "O" && g.gameBoard[1][2] == "O" && g.gameBoard[2][2] == "O") || (g.gameBoard[0][0] == "O" && g.gameBoard[1][1] == "O" && g.gameBoard[2][2] == "O") || (g.gameBoard[0][2] == "O" && g.gameBoard[1][1] == "O" && g.gameBoard[2][0] == "O") {
+func (g *Game) wins(winner string) {
+	if winner == "O" {
 		g.win = "O"
 		g.pointsO++
 		g.state = 2
-	} else if (g.gameBoard[0][0] == "X" && g.gameBoard[0][1] == "X" && g.gameBoard[0][2] == "X") || (g.gameBoard[1][0] == "X" && g.gameBoard[1][1] == "X" && g.gameBoard[1][2] == "X") || (g.gameBoard[2][0] == "X" && g.gameBoard[2][1] == "X" && g.gameBoard[2][2] == "X") || (g.gameBoard[0][0] == "X" && g.gameBoard[1][0] == "X" && g.gameBoard[2][0] == "X") || (g.gameBoard[0][1] == "X" && g.gameBoard[1][1] == "X" && g.gameBoard[2][1] == "X") || (g.gameBoard[0][2] == "X" && g.gameBoard[1][2] == "X" && g.gameBoard[2][2] == "X") || (g.gameBoard[0][0] == "X" && g.gameBoard[1][1] == "X" && g.gameBoard[2][2] == "X") || (g.gameBoard[0][2] == "X" && g.gameBoard[1][1] == "X" && g.gameBoard[2][0] == "X") {
+	} else if winner == "X" {
 		g.win = "X"
 		g.pointsX++
 		g.state = 2
-	} else if g.round == 8 {
+	} else if winner == "tie" {
 		g.win = "No one\n"
 		g.state = 2
 	}
+}
+
+func (g *Game) CheckWin() string {
+	for i, _ := range g.gameBoard {
+		if g.gameBoard[i][0] == g.gameBoard[i][1] && g.gameBoard[i][1] == g.gameBoard[i][2] {
+			return g.gameBoard[i][0]
+		}
+	}
+	for i, _ := range g.gameBoard {
+		if g.gameBoard[0][i] == g.gameBoard[1][i] && g.gameBoard[1][i] == g.gameBoard[2][i] {
+			return g.gameBoard[0][i]
+		}
+	}
+	if (g.gameBoard[0][0] == g.gameBoard[1][1] && g.gameBoard[1][1] == g.gameBoard[2][2]) || (g.gameBoard[0][2] == g.gameBoard[1][1] && g.gameBoard[1][1] == g.gameBoard[2][0]) {
+		return g.gameBoard[1][1]
+	}
+	if g.round == 8 {
+		return "tie"
+	}
+	return ""
 }
 
 func (g *Game) ResetPoints() {
@@ -223,6 +246,10 @@ func init() {
 func newRandom() *rand.Rand {
 	s1 := rand.NewSource(time.Now().UnixNano())
 	return rand.New(s1)
+}
+
+func (g *Game) Layout(int, int) (int, int) {
+	return sWidth, sHeight
 }
 
 func main() {

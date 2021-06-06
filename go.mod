@@ -1,4 +1,4 @@
-module tictactoe
+module "GoTicTacToe"
 
 go 1.16
 
