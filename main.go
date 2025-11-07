@@ -1,3 +1,31 @@
+// ============================================================================
+// File: main.go
+// Author: Ding Lionel, Darx Christian
+// Email: lionel.ding@hes-so.ch, christia.darx@hes-so.ch
+// Date: 07.11.2025
+// Description: HTTP server providing Fibonacci number calculation using
+//              fast binary method with big integers.
+// Version: 1.0
+//
+// Original Project:
+//   Author: LempekPL
+//   Source: https://github.com/LempekPL/GoTicTacToe
+//
+// License: MIT
+// Copyright 2025, School of Engineering and Architecture of Fribourg
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+// ============================================================================
+
 package main
 
 import (
@@ -197,22 +225,37 @@ func (g *Game) wins(winner string) {
 }
 
 func (g *Game) CheckWin() string {
-	for i, _ := range g.gameBoard {
-		if g.gameBoard[i][0] == g.gameBoard[i][1] && g.gameBoard[i][1] == g.gameBoard[i][2] {
-			return g.gameBoard[i][0]
+	for r := 0; r < 3; r++ {
+		if g.gameBoard[r][0] != "" &&
+			g.gameBoard[r][0] == g.gameBoard[r][1] &&
+			g.gameBoard[r][1] == g.gameBoard[r][2] {
+			return g.gameBoard[r][0]
 		}
 	}
-	for i, _ := range g.gameBoard {
-		if g.gameBoard[0][i] == g.gameBoard[1][i] && g.gameBoard[1][i] == g.gameBoard[2][i] {
-			return g.gameBoard[0][i]
+
+	for c := 0; c < 3; c++ {
+		if g.gameBoard[0][c] != "" &&
+			g.gameBoard[0][c] == g.gameBoard[1][c] &&
+			g.gameBoard[1][c] == g.gameBoard[2][c] {
+			return g.gameBoard[0][c]
 		}
 	}
-	if (g.gameBoard[0][0] == g.gameBoard[1][1] && g.gameBoard[1][1] == g.gameBoard[2][2]) || (g.gameBoard[0][2] == g.gameBoard[1][1] && g.gameBoard[1][1] == g.gameBoard[2][0]) {
-		return g.gameBoard[1][1]
+
+	if g.gameBoard[1][1] != "" {
+		if g.gameBoard[0][0] == g.gameBoard[1][1] &&
+			g.gameBoard[1][1] == g.gameBoard[2][2] {
+			return g.gameBoard[1][1]
+		}
+		if g.gameBoard[0][2] == g.gameBoard[1][1] &&
+			g.gameBoard[1][1] == g.gameBoard[2][0] {
+			return g.gameBoard[1][1]
+		}
 	}
+
 	if g.round == 8 {
 		return "tie"
 	}
+
 	return ""
 }
 
